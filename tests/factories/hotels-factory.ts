@@ -18,7 +18,7 @@ export async function createRoomWithHotelId(
   return prisma.room.create({
     data: {
       name: faker.commerce.color(),
-      capacity: capacity !== undefined ? capacity : 3,
+      capacity: capacity !== undefined ? capacity : 4,
       hotelId: hotelId,
     },
   });
