@@ -10,6 +10,30 @@ import enrollmentRepository from "@/repositories/enrollment-repository";
 import ticketRepository from "@/repositories/ticket-repository";
 import { Booking } from "@prisma/client";
 
+async function postBooking(userId: number, roomId: number): Promise<Booking> {
+  await checkEnrollmentAndTicket(userId);
+  await checkRoom(roomId);
+  await decreaseRoomCapacity(roomId);
+  return await bookingRepository.createBooking(userId, roomId);
+}
+
+async function getBookings(userId: number) {
+  const booking = await checkBookingByUserId(userId);
+  return { id: booking.id, Room: booking.Room } as GetBooking;
+}
+
+async function updateBooking(
+  userId: number,
+  bookingId: number,
+  roomId: number
+) {
+  const validBooking = await checkBookings(userId, bookingId);
+  await checkRoom(roomId);
+  await decreaseRoomCapacity(roomId);
+  await increaseRoomCapacity(validBooking.roomId);
+  return (await bookingRepository.updateBooking(bookingId, roomId)) as Booking;
+}
+
 async function checkEnrollmentAndTicket(userId: number) {
   const enrollment = await enrollmentRepository.findWithAddressByUserId(userId);
   if (!enrollment) throw notFoundError();
@@ -34,13 +58,6 @@ async function decreaseRoomCapacity(roomId: number) {
   await bookingRepository.decreaseRoomCapacity(roomId);
 }
 
-async function postBooking(userId: number, roomId: number): Promise<Booking> {
-  await checkEnrollmentAndTicket(userId);
-  await checkRoom(roomId);
-  await decreaseRoomCapacity(roomId);
-  return await bookingRepository.createBooking(userId, roomId);
-}
-
 async function checkBookingByUserId(userId: number) {
   const booking = await bookingRepository.findBookingByUserId(userId);
   if (!booking) throw notFoundError();
@@ -52,28 +69,15 @@ async function checkBookingById(bookingId: number) {
   if (!booking) throw notFoundError();
   return booking;
 }
-
-async function increaseRoomCapacity(roomId: number) {
-  await bookingRepository.increaseRoomCapacity(roomId);
-}
-
-async function updateBooking(
-  userId: number,
-  bookingId: number,
-  roomId: number
-) {
+async function checkBookings(userId: number, bookingId: number) {
   const userBooking = await checkBookingByUserId(userId);
   const paramsBooking = await checkBookingById(bookingId);
   if (userBooking.id !== paramsBooking.id) throw forbiddenError();
-  await checkRoom(roomId);
-  await decreaseRoomCapacity(roomId);
-  await increaseRoomCapacity(paramsBooking.roomId);
-  return (await bookingRepository.updateBooking(bookingId, roomId)) as Booking;
+  return paramsBooking;
 }
 
-async function getBookings(userId: number) {
-  const booking = await checkBookingByUserId(userId);
-  return { id: booking.id, Room: booking.Room } as GetBooking;
+async function increaseRoomCapacity(roomId: number) {
+  await bookingRepository.increaseRoomCapacity(roomId);
 }
 
 const bookingsService = {
