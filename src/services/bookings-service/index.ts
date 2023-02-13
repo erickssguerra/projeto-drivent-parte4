@@ -1,6 +1,9 @@
-import { notFoundError } from "@/errors";
-import { fullRoomError } from "@/errors/full-room-error";
-import { paymentRequiredError } from "@/errors/payment-required-error";
+import {
+  notFoundError,
+  fullRoomError,
+  paymentRequiredError,
+  forbiddenError,
+} from "@/errors";
 import { GetBooking } from "@/protocols";
 import bookingRepository from "@/repositories/booking-repositoyr";
 import enrollmentRepository from "@/repositories/enrollment-repository";
@@ -27,26 +30,56 @@ async function checkRoom(roomId: number) {
   if (room.capacity < 1) throw fullRoomError();
 }
 
-async function updateRoomCapacity(roomId: number) {
-  await bookingRepository.updateRoomCapacity(roomId);
+async function decreaseRoomCapacity(roomId: number) {
+  await bookingRepository.decreaseRoomCapacity(roomId);
 }
 
 async function postBooking(userId: number, roomId: number): Promise<Booking> {
   await checkEnrollmentAndTicket(userId);
   await checkRoom(roomId);
-  await updateRoomCapacity(roomId);
+  await decreaseRoomCapacity(roomId);
   return await bookingRepository.createBooking(userId, roomId);
 }
 
-async function getBookings(userId: number) {
+async function checkBookingByUserId(userId: number) {
   const booking = await bookingRepository.findBookingByUserId(userId);
   if (!booking) throw notFoundError();
+  return booking;
+}
+
+async function checkBookingById(bookingId: number) {
+  const booking = await bookingRepository.findBookingById(bookingId);
+  if (!booking) throw notFoundError();
+  return booking;
+}
+
+async function increaseRoomCapacity(roomId: number) {
+  await bookingRepository.increaseRoomCapacity(roomId);
+}
+
+async function updateBooking(
+  userId: number,
+  bookingId: number,
+  roomId: number
+) {
+  const userBooking = await checkBookingByUserId(userId);
+  const paramsBooking = await checkBookingById(bookingId);
+  if (userBooking.id !== paramsBooking.id) throw forbiddenError();
+  await checkRoom(roomId);
+  await decreaseRoomCapacity(roomId);
+  await increaseRoomCapacity(paramsBooking.roomId);
+  return (await bookingRepository.updateBooking(bookingId, roomId)) as Booking;
+}
+
+async function getBookings(userId: number) {
+  const booking = await checkBookingByUserId(userId);
   return { id: booking.id, Room: booking.Room } as GetBooking;
 }
 
 const bookingsService = {
   postBooking,
   getBookings,
+  updateBooking,
 };
 
 export default bookingsService;

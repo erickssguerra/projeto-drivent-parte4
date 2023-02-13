@@ -14,7 +14,7 @@ async function findRoom(roomId: number) {
   });
 }
 
-async function updateRoomCapacity(roomId: number) {
+async function decreaseRoomCapacity(roomId: number) {
   await prisma.room.update({
     where: { id: roomId },
     data: { capacity: { decrement: 1 } },
@@ -28,11 +28,32 @@ async function findBookingByUserId(userId: number) {
   });
 }
 
+async function findBookingById(bookingId: number) {
+  return await prisma.booking.findUnique({ where: { id: bookingId } });
+}
+
+async function updateBooking(bookingId: number, roomId: number) {
+  return await prisma.booking.update({
+    where: { id: bookingId },
+    data: { roomId },
+  });
+}
+
+async function increaseRoomCapacity(roomId: number) {
+  await prisma.room.update({
+    where: { id: roomId },
+    data: { capacity: { increment: 1 } },
+  });
+}
+
 const bookingRepository = {
   createBooking,
   findRoom,
-  updateRoomCapacity,
+  decreaseRoomCapacity,
+  increaseRoomCapacity,
   findBookingByUserId,
+  findBookingById,
+  updateBooking,
 };
 
 export default bookingRepository;
