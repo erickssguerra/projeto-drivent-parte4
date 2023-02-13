@@ -30,11 +30,11 @@ async function updateRoomCapacity(roomId: number) {
   await bookingRepository.updateRoomCapacity(roomId);
 }
 
-async function postBooking(userId: number, roomId: number) {
+async function postBooking(userId: number, roomId: number): Promise<Booking> {
   await checkEnrollmentAndTicket(userId);
   await checkRoom(roomId);
   await updateRoomCapacity(roomId);
-  (await bookingRepository.createBooking(userId, roomId)) as Booking;
+  return await bookingRepository.createBooking(userId, roomId);
 }
 
 const bookingsService = {
