@@ -1,6 +1,7 @@
 import { notFoundError } from "@/errors";
 import { fullRoomError } from "@/errors/full-room-error";
 import { paymentRequiredError } from "@/errors/payment-required-error";
+import { GetBooking } from "@/protocols";
 import bookingRepository from "@/repositories/booking-repositoyr";
 import enrollmentRepository from "@/repositories/enrollment-repository";
 import ticketRepository from "@/repositories/ticket-repository";
@@ -37,8 +38,15 @@ async function postBooking(userId: number, roomId: number): Promise<Booking> {
   return await bookingRepository.createBooking(userId, roomId);
 }
 
+async function getBookings(userId: number) {
+  const booking = await bookingRepository.findBookingByUserId(userId);
+  if (!booking) throw notFoundError();
+  return { id: booking.id, Room: booking.Room } as GetBooking;
+}
+
 const bookingsService = {
   postBooking,
+  getBookings,
 };
 
 export default bookingsService;

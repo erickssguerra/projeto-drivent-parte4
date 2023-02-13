@@ -1,4 +1,5 @@
 import { AuthenticatedRequest } from "@/middlewares";
+import { GetBooking } from "@/protocols";
 import bookingsService from "@/services/bookings-service";
 import { Booking } from "@prisma/client";
 import { Response } from "express";
@@ -8,7 +9,7 @@ export async function postBooking(req: AuthenticatedRequest, res: Response) {
   const { userId } = req;
   const { roomId } = req.body;
   try {
-    const booking = await bookingsService.postBooking(userId, roomId) as Booking;
+    const booking = await bookingsService.postBooking(userId,roomId) as Booking;
     res.status(httpStatus.OK).send({ bookingId: booking.id });
   } catch (error) {
     if (error.name === "FullRoomError") {
@@ -19,6 +20,19 @@ export async function postBooking(req: AuthenticatedRequest, res: Response) {
     }
     if (error.name === "PaymentRequiredError") {
       return res.status(httpStatus.PAYMENT_REQUIRED).send(error.message);
+    }
+    res.sendStatus(httpStatus.BAD_REQUEST);
+  }
+}
+
+export async function getBookings(req: AuthenticatedRequest, res: Response) {
+  const { userId } = req;
+  try {
+    const booking = await bookingsService.getBookings(userId) as GetBooking;
+    res.status(httpStatus.OK).send(booking);
+  } catch (error) {
+    if (error.name === "NotFoundError") {
+      return res.status(httpStatus.NOT_FOUND).send(error.message);
     }
     res.sendStatus(httpStatus.BAD_REQUEST);
   }
